@@ -4,18 +4,32 @@ version: 0.1.0.{build}
 # Select the worker image
 image: Visual Studio 2019
 
-# Fake build script
-build_script:
-  - echo "This step would build the artifact in build-output/unsigned/combined.zip"
+test: off
 
+# Fake build script
+build_script: |
+    echo "This step would build the artifact in build-output/unsigned/odata2poco-%VERSION%.zip"
+    cd
+    pushd .\build-output\signed
+    dir
+    7z a -tzip odata2poco-%VERSION%.zip *.nupkg *.exe
+    dir
+    
+  
 # Definition of artifacts
 artifacts:
-  - path: build-output\unsigned\combined.zip
+  - path: build-output\unsigned\odata2poco-%VERSION%.zip
 
 # Set the signing policy slug according to branch
 environment:
+  VERSION: v6.1.0
   SIGNPATH_SIGNING_POLICY_SLUG: test-signing
-  ARTIFACT_CONFIGURATION_SLUG: v1
+  ARTIFACT_CONFIGURATION_SLUG: o2p2
+  SIGNPATH_ORGANIZATION_ID: 783237d7-f6db-4caa-b64e-a3fc87156006
+  SIGNPATH_PROJECT_SLUG : odata2poco 
+  SIGNPATH_CI_USER_TOKEN:
+    secure: fkMRmkT0HDBDna85gU5hTJnS4G7brD0xoc7YAtD001hqlRSgI4hCyCMtbeJZOYT1
+
 for:
   -
     branches:
@@ -23,10 +37,10 @@ for:
         - /release/.*/
         - master
     environment:
-      SIGNPATH_SIGNING_POLICY_SLUG: release-signing
+      SIGNPATH_SIGNING_POLICY_SLUG: test-signing
 
-deploy:
-  - provider: Webhook
-    url: https://app.signpath.io/API/v1/%SIGNPATH_ORGANIZATION_ID%/Integrations/AppVeyor?ProjectSlug=%SIGNPATH_PROJECT_SLUG%&SigningPolicySlug=%SIGNPATH_SIGNING_POLICY_SLUG%&ArtifactConfigurationSlug=%ARTIFACT_CONFIGURATION_SLUG%
-    authorization: 'Bearer %SIGNPATH_CI_USER_TOKEN%'
+#deploy:
+#  - provider: Webhook
+#    url: https://app.signpath.io/API/v1/%SIGNPATH_ORGANIZATION_ID%/Integrations/AppVeyor?ProjectSlug=%SIGNPATH_PROJECT_SLUG%&SigningPolicySlug=%SIGNPATH_SIGNING_POLICY_SLUG%&ArtifactConfigurationSlug=%ARTIFACT_CONFIGURATION_SLUG%
+#    authorization: 'Bearer %SIGNPATH_CI_USER_TOKEN%'
 
