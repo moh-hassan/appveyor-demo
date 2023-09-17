@@ -2,24 +2,18 @@
 version: 0.1.0.{build}
 
 # Select the worker image
-image: Visual Studio 2022
+image: Visual Studio 2019
 
-# scripts that run after cloning repository
-install:
-  - ps: Install-Module -Name SignPath
-#  - ps: Install-Module -Name PowerShellForGitHub 
-  - cmd: choco install gh
-  
 test: off
 
 # Fake build script
 build_script: |
     echo "This step would build the artifact in build-output/unsigned/odata2poco-%VERSION%.zip"
-# cd
-# pushd .\build-output\signed
-# dir
-# 7z a -tzip odata2poco-%VERSION%.zip *.nupkg *.exe
-# dir
+    cd
+    pushd .\build-output\signed
+    dir
+    7z a -tzip odata2poco-%VERSION%.zip *.nupkg *.exe
+    dir
     
   
 # Definition of artifacts
@@ -35,7 +29,6 @@ environment:
   SIGNPATH_PROJECT_SLUG : odata2poco 
   SIGNPATH_CI_USER_TOKEN:
     secure: fkMRmkT0HDBDna85gU5hTJnS4G7brD0xoc7YAtD001hqlRSgI4hCyCMtbeJZOYT1
-  
 
 for:
   -
@@ -46,18 +39,8 @@ for:
     environment:
       SIGNPATH_SIGNING_POLICY_SLUG: test-signing
 
-
 #deploy:
 #  - provider: Webhook
 #    url: https://app.signpath.io/API/v1/%SIGNPATH_ORGANIZATION_ID%/Integrations/AppVeyor?ProjectSlug=%SIGNPATH_PROJECT_SLUG%&SigningPolicySlug=%SIGNPATH_SIGNING_POLICY_SLUG%&ArtifactConfigurationSlug=%ARTIFACT_CONFIGURATION_SLUG%
 #    authorization: 'Bearer %SIGNPATH_CI_USER_TOKEN%'
-
-
-
-init:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-  
-on_finish:
-- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
 
