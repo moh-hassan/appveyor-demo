@@ -1,58 +1,70 @@
 # Define the build version
 version: 0.1.0.{build}
-
-# Select the worker image
 image: Visual Studio 2022
+
+
+# Set the signing policy slug according to branch
+environment:
+  O2P_VERSION: "6.1.0"
+  SIGNPATH_SIGNING_POLICY_SLUG: test-signing
+  ARTIFACT_CONFIGURATION_SLUG: o2p2
+#  SIGNPATH_ORGANIZATION_ID: 783237d7-f6db-4caa-b64e-a3fc87156006
+  SIGNPATH_PROJECT_SLUG : odata2poco 
+#  SIGNPATH_CI_USER_TOKEN:
+#    secure: fkMRmkT0HDBDna85gU5hTJnS4G7brD0xoc7YAtD001hqlRSgI4hCyCMtbeJZOYT1
+
 
 # scripts that run after cloning repository
 #install:
 #  - ps: Install-Module -Name SignPath
 #  - ps: Install-Module -Name PowerShellForGitHub 
 #  - cmd: choco install gh
-  
-test: off
 
-# Fake build script
-build_script: |
-    echo "This step would build the artifact in build-output/unsigned/odata2poco-%VERSION%.zip"
+build_script: 
+  -  echo "This step would build the artifact for signing"
+  -  echo "download test artifacts signing"
+  - ps: |
+      $root="https://github.com/moh-hassan/odata2poco/releases/download/v6.1.0"
+      appveyor DownloadFile "$root/odata2poco-commandline.6.1.0.nupkg" -FileName ".\chocolatey\odata2poco-commandline.6.1.0.nupkg"
+      appveyor DownloadFile "$root/OData2Poco.6.1.0.snupkg" -FileName ".\build\OData2Poco.6.1.0.snupkg"
+      appveyor DownloadFile "$root/OData2Poco.6.1.0.nupkg" -FileName ".\build\OData2Poco.6.1.0.nupkg"
+      appveyor DownloadFile "$root/OData2Poco.CommandLine.6.1.0.nupkg"  -FileName ".\build\OData2Poco.CommandLine.6.1.0.nupkg"
+      appveyor DownloadFile "$root/OData2Poco.dotnet.o2pgen.6.1.0.nupkg"  -FileName ".\build\OData2Poco.dotnet.o2pgen.6.1.0.nupkg"
+      appveyor DownloadFile "$root/o2pgen.exe"  -FileName ".\build\o2pgen.exe"
+  - ps: |
+      if ($env:APPVEYOR_REPO_TAG -eq "true") {
+        $O2P_VERSION = $Env:APPVEYOR_REPO_TAG_NAME
+        $O2P_VERSION = $O2P_VERSION -replace 'v', ''
+      } else {
+        $O2P_VERSION = $Env:APPVEYOR_BUILD_VERSION
+        $O2P_VERSION = $O2P_VERSION -replace 'v', ''
+      }
+      $O2P_VERSION = "6.1.0"
+  -  7z a -tzip .\build\odata2poco-%O2P_VERSION%.zip .\build\*.nupkg  .\build\*.snupkg  .\build\*.exe .\chocolatey\*.nupkg   
 
-# cd
-# pushd .\build-output\signed
-# dir
-# 7z a -tzip odata2poco-%VERSION%.zip *.nupkg *.exe
-# dir
+ 
 
-    
-  
 # Definition of artifacts
-artifacts:
-  - path: build-output\unsigned\odata2poco-%VERSION%.zip
-
-# Set the signing policy slug according to branch
-environment:
-  VERSION: v6.1.0
-  SIGNPATH_SIGNING_POLICY_SLUG: test-signing
-  ARTIFACT_CONFIGURATION_SLUG: o2p2
-#  SIGNPATH_ORGANIZATION_ID: 783237d7-f6db-4caa-b64e-a3fc87156006
-  SIGNPATH_PROJECT_SLUG : odata2poco 
-  SIGNPATH_CI_USER_TOKEN:
-    secure: fkMRmkT0HDBDna85gU5hTJnS4G7brD0xoc7YAtD001hqlRSgI4hCyCMtbeJZOYT1
-
-for:
-  -
-    branches:
-      only:
-        - /release/.*/
-        - master
-    environment:
-      SIGNPATH_SIGNING_POLICY_SLUG: test-signing
-
+artifacts:  
+  # - path: .\build\OData2Poco.dotnet.o2pgen*.nupkg
+  #   name: global_tool
+  # - path: .\build\o2pgen.exe
+  #   name: o2p_exe
+  # - path: .\build\OData2Poco.CommandLine.*.nupkg
+  #   name: o2pgen
+  # - path: .\build\OData2Poco.*.nupkg
+  #   name: lib
+  # - path: '.\build\OData2Poco.*.snupkg'
+  #   name: symbol   
+  # - path: '.\chocolatey\*.nupkg'
+  #   name: choco_pkg  
+  - path: .\build\odata2poco-%O2P_VERSION%.zip
+    name: o2p_zip
 
 deploy:
   - provider: Webhook
     url: https://app.signpath.io/API/v1/%SIGNPATH_ORGANIZATION_ID%/Integrations/AppVeyor?ProjectSlug=%SIGNPATH_PROJECT_SLUG%&SigningPolicySlug=%SIGNPATH_SIGNING_POLICY_SLUG%&ArtifactConfigurationSlug=%ARTIFACT_CONFIGURATION_SLUG%
-    authorization: 'Bearer %SIGNPATH_CI_USER_TOKEN%'
-
+    authorization: 'Bearer %SIGNPATH_CI_USER_TOKEN%'    
 
 
 # init:
@@ -61,6 +73,7 @@ deploy:
 #  on_finish:
 # - ps: $blockRdp = $true; iex ((new-object  net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
-on_finish:
-  - ps: Write-Host "SIGNPATH_SIGNING_REQUEST_ID= $Env:SIGNPATH_SIGNING_REQUEST_ID"
+# on_finish:
+#   - ps: Write-Host "SIGNPATH_SIGNING_REQUEST_ID= $($Env:SIGNPATH_SIGNING_REQUEST_ID)"
+  
 
