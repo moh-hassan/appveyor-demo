@@ -18,10 +18,13 @@ jobs:
           
       - name: Run PowerShell script
         shell: pwsh
+        env:
+          ORGANIZATIONID: ${{ secrets.ORGANIZATIONID }}
+          SIGNPATH_CI_USER_TOKEN: ${{ secrets.SIGNPATH_CI_USER_TOKEN }}
+          SIGNING_REQUEST_ID: ${{ secrets.SIGNING_REQUEST_ID }}
         run: |
            Import-Module -Name SignPath
-          ./.github/workflows/script.ps1
-          
+           ./.github/workflows/script.ps1          
       - name: Print build folder contents
         run: Get-ChildItem -Path $env:GITHUB_WORKSPACE\artifacts -Recurse
         shell: pwsh
