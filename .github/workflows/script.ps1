@@ -1,0 +1,1 @@
+write-host "run ps in github action"

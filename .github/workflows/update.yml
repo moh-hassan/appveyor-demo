@@ -1,0 +1,19 @@
+name: Update Release with Signed Artifacts
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  update_release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run PowerShell script
+        shell: pwsh
+        run: ./.github/workflows/script.ps1
+        
+
+        

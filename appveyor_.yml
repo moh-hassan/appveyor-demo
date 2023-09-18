@@ -15,11 +15,13 @@ test: off
 # Fake build script
 build_script: |
     echo "This step would build the artifact in build-output/unsigned/odata2poco-%VERSION%.zip"
+
 # cd
 # pushd .\build-output\signed
 # dir
 # 7z a -tzip odata2poco-%VERSION%.zip *.nupkg *.exe
 # dir
+
     
   
 # Definition of artifacts
@@ -35,7 +37,11 @@ environment:
   SIGNPATH_PROJECT_SLUG : odata2poco 
   SIGNPATH_CI_USER_TOKEN:
     secure: fkMRmkT0HDBDna85gU5hTJnS4G7brD0xoc7YAtD001hqlRSgI4hCyCMtbeJZOYT1
+<<<<<<< HEAD
   
+=======
+  APPVEYOR_RDP_PASSWORD: Eissa@123
+>>>>>>> e9104d531a5214f01a720505f447ad8e651371a3
 
 for:
   -
