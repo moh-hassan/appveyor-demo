@@ -5,39 +5,93 @@ image: Visual Studio 2022
 
 
 init:
-  - ps: Write-Host "SIGNPATH_SIGNING_REQUEST_ID= $Env:SIGNPATH_SIGNING_REQUEST_ID"
+  # - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+  - ps: |
+      git config --global core.autocrlf input
+      Write-Host "APPVEYOR_BUILD_VERSION='$env:APPVEYOR_BUILD_VERSION'" -ForegroundColor Yellow      
+      $env:SIGNPATH_SIGNING_POLICY_SLUG = 'test-signing'
+      $env:APPVEY_VERSION = $env:APPVEY_BUILD_VERSION
+
+      if ($env:APPVEYOR_REPO_TAG -eq "true") {
+        $env:SIGNPATH_SIGNING_POLICY_SLUG = 'release-signing'
+        $ver = $env:APPVEYOR_REPO_TAG_NAME
+        if($ver.StartsWith("v") -eq $true) { 
+          $ver = $ver.Substring(1) 
+          $env:APPVEY_VERSION = $ver
+        }
+        try
+        {         
+          Update-AppveyorBuild -Version $ver 
+          Write-Host "Update-AppveyorBuild Success to change version to TAG: '$env:APPVEYOR_REPO_TAG_NAME'"   -ForegroundColor Green          
+        }
+        catch
+        {
+          Write-Host "Update-AppveyorBuild Fail to change version to TAG: '$env:APPVEYOR_REPO_TAG_NAME'"   -ForegroundColor Red
+          Write-Host "Exception Error: $PSItem.Exception.Message" -ForegroundColor Red
+        }
+      }
+  - ps: |
+      Write-Host "APPVEYOR_BUILD_VERSION='$env:APPVEYOR_BUILD_VERSION'" -ForegroundColor Yellow
+      Write-Host "APPVEYOR_REPO_TAG_NAME= '$env:APPVEYOR_REPO_TAG_NAME'" -ForegroundColor Yellow      
+
   
   
 #install:
 #  - ps: Install-Module -Name SignPath
-#  - ps: Install-Module -Name PowerShellForGitHub 
 #  - cmd: choco install gh
   
 #test: off
 
 build_script: 
   - ps: |
-      if ($env:SIGNPATH_SIGNING_REQUESt_ID -eq $null)
+      if ($env:SIGNPATH_SIGNING_REQUESt_ID -eq 'NULL')
       {
         Write-Host "SIGNPATH_SIGNING_REQUESt_ID is not set"
         exit 1
       }
-      if ($env:ARTIFACTS_PATH -eq $null)
+
+      if ($env:ARTIFACTS_PATH -eq 'NULL')
       {
         Write-Host "ARTIFACTS_PATH is not set"
         exit 1
       }
 
-      if (-not (Test-Path .\artifacts)) {
-      New-Item -ItemType Directory -Path .\artifacts
-      }
-  - ps: echo "Loading signed artifacts for SIGNPATH_SIGNING_REQUEST_ID=$SIGNPATH_SIGNING_REQUEST_ID"
+  - ps: Write-Host "SIGNPATH_SIGNING_REQUEST_ID= $Env:SIGNPATH_SIGNING_REQUEST_ID"  
+  - ps: Write-Host "ARTIFACTS_PATH= $Env:ARTIFACTS_PATH"    
+  - ps: echo "Loading signed artifacts for SIGNPATH_SIGNING_REQUEST_ID=$env:SIGNPATH_SIGNING_REQUEST_ID"
   - ps: . .\scripts\run.ps1
-  # - ps: |
-  #     Get-SignedArtifact `
-  #      -OrganizationId $env:SIGNPATH_ORGANIZATION_ID `
-  #      -ApiToken $env:SIGNPATH_CI_USER_TOKEN `
-  #      -SigningRequestId $env:SIGNPATH_SIGNING_REQUESt_ID `
-  #      -OutputArtifactPath ./artifacts/Appvey.1.1.0-dev.nupkg
-  - ps: Write-Host "Downloaded artifact to $ARTIFACTS_PATH"     
+  - ps: Download-Artifacts
 
+artifacts:
+  - path: '**/*.nupkg'
+    name: nupkg
+    
+deploy:
+  # GitHub
+  - provider: GitHub
+    auth_token: $(GH_TOKEN)
+    artifact: nupkg
+    prerelease: true
+    on:
+      branch: master
+      #appveyor_repo_tag: true
+
+# myget
+  -  provider: NuGet
+     server: https://www.myget.org/F/appvey/api/v2/package
+     api_key: 
+        secure: QAHjX2gqddFX2cNhMNqweMTGQ89q++ezKnQvdAcinY5D1rwbj2vkWeFsTykm4koA
+ 
+
+  # Nuget
+  - provider: NuGet
+    api_key: $(NUGET_KEY)
+    artifact: nupkg     
+    on:   
+      branch: master                # release from master branch only
+      APPVEYOR_REPO_TAG: true       # deploy on tag push only
+
+# on_finish:
+#   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+ 
